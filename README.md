@@ -6,7 +6,6 @@
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![OpenStack](https://img.shields.io/badge/OpenStack-Octavia-red.svg)](https://docs.openstack.org/octavia/latest/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 [![CI](https://github.com/edgeNEXUS/Edgeadc_Octavia_Driver/actions/workflows/ci.yml/badge.svg)](https://github.com/edgeNEXUS/Edgeadc_Octavia_Driver/actions)
 
 <img src="https://www.edgenexus.io/wp-content/uploads/2023/03/EdgeNexus-Logo.svg" alt="EdgeNexus Logo" width="300"/>
@@ -389,7 +388,7 @@ pytest tests/ -v
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This software is proprietary and confidential. See your license agreement with EdgeNexus for terms of use.
 
 ---
 

@@ -7,7 +7,7 @@ name = "octavia-edgeadc-driver"
 version = "1.0.0"
 description = "OpenStack Octavia provider driver for EdgeNexus EdgeADC"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {text = "Proprietary"}
 authors = [
     {name = "EdgeNexus", email = "support@edgenexus.io"}
 ]
@@ -27,7 +27,7 @@ classifiers = [
     "Environment :: OpenStack",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: Other/Proprietary License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",

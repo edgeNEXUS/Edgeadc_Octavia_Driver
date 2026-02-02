@@ -1,0 +1,83 @@
+# Example Octavia configuration for EdgeADC driver
+# Copy relevant sections to /etc/octavia/octavia.conf
+
+[DEFAULT]
+# Enable debug logging (optional)
+debug = false
+
+[api_settings]
+# Enable the EdgeADC provider driver
+# You can have multiple providers enabled
+enabled_provider_drivers = amphora:Amphora,edgeadc:EdgeADC
+
+# Set EdgeADC as the default provider (optional)
+# If not set, users must specify --provider edgeadc when creating load balancers
+default_provider_driver = edgeadc
+
+[driver_agent]
+# Enable the EdgeADC provider agent
+enabled_provider_agents = edgeadc_agent
+
+# Status update interval in seconds
+status_update_interval = 10
+
+# Maximum time to wait for driver operations
+driver_agent_timeout = 60
+
+[edgeadc]
+# =============================================================================
+# EdgeADC Connection Settings
+# =============================================================================
+
+# EdgeADC appliance hostname or IP address (REQUIRED)
+edgeadc_host = 192.168.1.100
+
+# EdgeADC admin username (default: admin)
+edgeadc_username = admin
+
+# EdgeADC admin password (REQUIRED)
+# For production, consider using a secrets manager
+edgeadc_password = your_secure_password
+
+# EdgeADC HTTPS port (default: 443)
+edgeadc_port = 443
+
+# Verify SSL certificates when connecting to EdgeADC
+# Set to true in production with valid certificates
+edgeadc_verify_ssl = false
+
+# Timeout in seconds for EdgeADC API requests (default: 30)
+edgeadc_request_timeout = 30
+
+# Default subnet mask for VIPs (default: 255.255.255.0)
+edgeadc_default_subnet_mask = 255.255.255.0
+
+# =============================================================================
+# Advanced Settings (Optional)
+# =============================================================================
+
+# Connection pool size for EdgeADC API
+# edgeadc_connection_pool_size = 10
+
+# Retry count for failed API requests
+# edgeadc_retry_count = 3
+
+# Retry delay in seconds
+# edgeadc_retry_delay = 1
+
+# =============================================================================
+# Multiple EdgeADC Devices (Future Feature)
+# =============================================================================
+# For high availability or multi-site deployments, you can configure
+# multiple EdgeADC devices using availability zones or flavors.
+#
+# Example flavor configuration:
+# [edgeadc_device_dc1]
+# edgeadc_host = 192.168.1.100
+# edgeadc_username = admin
+# edgeadc_password = password1
+#
+# [edgeadc_device_dc2]
+# edgeadc_host = 192.168.2.100
+# edgeadc_username = admin
+# edgeadc_password = password2

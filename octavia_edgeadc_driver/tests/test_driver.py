@@ -9,7 +9,7 @@ import pytest
 # Skip all tests in this module if oslo_config is not available
 pytest.importorskip("oslo_config", reason="oslo_config not installed")
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 
 @pytest.fixture

@@ -1,8 +1,9 @@
 """
 Pytest configuration and fixtures for EdgeADC driver tests.
 """
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 
 @pytest.fixture

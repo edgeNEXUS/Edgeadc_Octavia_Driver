@@ -15,14 +15,14 @@ CONF = cfg.CONF
 
 def edgeadc_provider_agent():
     """Entry point for the EdgeADC provider agent.
-    
+
     This function is called by the Octavia driver agent to initialize
     the EdgeADC provider. It registers configuration options and sets
     up any necessary background tasks.
     """
     driver_config.register_opts(CONF)
     LOG.info("EdgeADC provider agent started")
-    
+
     # The agent runs as part of the Octavia driver agent process
     # No additional background tasks needed for basic operation
     return None

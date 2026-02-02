@@ -7,7 +7,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import httpx
 
@@ -35,8 +35,8 @@ class EdgeADCClient:
         self.password = password
         self.timeout = timeout
         self.verify_ssl = verify_ssl
-        self._guid: Optional[str] = None
-        self._client: Optional[httpx.Client] = None
+        self._guid: str | None = None
+        self._client: httpx.Client | None = None
 
     def _get_client(self) -> httpx.Client:
         """Get or create HTTP client."""
@@ -53,7 +53,7 @@ class EdgeADCClient:
             self._client.close()
             self._client = None
 
-    def login(self) -> Optional[str]:
+    def login(self) -> str | None:
         """Authenticate with the device and return GUID."""
         url = f"{self.base_url}{constants.API_LOGIN}"
         client = self._get_client()
@@ -88,7 +88,7 @@ class EdgeADCClient:
         if not self._guid:
             self.login()
 
-    def _get(self, path: str) -> Tuple[int, Any]:
+    def _get(self, path: str) -> tuple[int, Any]:
         """Make a GET request."""
         self._ensure_login()
         client = self._get_client()
@@ -101,7 +101,7 @@ class EdgeADCClient:
             return 500, None
         return r.status_code, js
 
-    def _post(self, path: str, payload: Dict[str, Any]) -> Tuple[int, Any]:
+    def _post(self, path: str, payload: dict[str, Any]) -> tuple[int, Any]:
         """Make a POST request."""
         self._ensure_login()
         client = self._get_client()
@@ -114,14 +114,14 @@ class EdgeADCClient:
             return 500, None
         return r.status_code, js
 
-    def get_system_info(self) -> Dict[str, Any]:
+    def get_system_info(self) -> dict[str, Any]:
         """Get system information."""
         code, js = self._get(constants.API_SYSTEM_INFO)
         if code == 200 and isinstance(js, dict):
             return js
         return {}
 
-    def get_ip_services(self) -> List[Dict[str, Any]]:
+    def get_ip_services(self) -> list[dict[str, Any]]:
         """Get all IP services (VIPs)."""
         code, js = self._get(f"{constants.API_IP_SERVICES}?isPageLoad=true")
         if code != 200 or not isinstance(js, dict):
@@ -141,7 +141,7 @@ class EdgeADCClient:
                         result.append(interface_list)
         return result
 
-    def _find_empty_template(self, max_retries: int = 5) -> Optional[Dict[str, Any]]:
+    def _find_empty_template(self, max_retries: int = 5) -> dict[str, Any] | None:
         """Find an empty VIP template (ipAddr is empty) with retry logic."""
         for attempt in range(max_retries):
             vips = self.get_ip_services()
@@ -159,9 +159,9 @@ class EdgeADCClient:
         protocol: str = "HTTP",
         subnet_mask: str = "255.255.255.0",
         service_name: str = ""
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    ) -> tuple[bool, dict[str, Any] | None]:
         """Create a new Virtual IP Service (VIP) using Terraform two-step approach.
-        
+
         EdgeADC requires a two-step process:
         1. Create a blank template VIP
         2. Update the template with actual values
@@ -241,7 +241,7 @@ class EdgeADCClient:
         LOG.info(f"EdgeADC {self.host}: Delete VIP {ip_addr}:{port} - {'OK' if success else 'FAILED'}")
         return success
 
-    def _get_vip_info(self, vip_ip: str, vip_port: int) -> Optional[Dict[str, Any]]:
+    def _get_vip_info(self, vip_ip: str, vip_port: int) -> dict[str, Any] | None:
         """Get VIP info including InterfaceID and ChannelID."""
         vips = self.get_ip_services()
         for vip in vips:
@@ -256,7 +256,7 @@ class EdgeADCClient:
         member_ip: str,
         member_port: int,
         weight: int = 100
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    ) -> tuple[bool, dict[str, Any] | None]:
         """Add a member (content server) to a VIP."""
         vip_info = self._get_vip_info(vip_ip, vip_port)
         if not vip_info:
@@ -308,7 +308,7 @@ class EdgeADCClient:
         LOG.info(f"EdgeADC {self.host}: Add member {member_ip}:{member_port} to VIP - {'OK' if success else 'FAILED'}")
         return success, js
 
-    def _find_placeholder_cid(self, response: Dict, channel_key: str) -> int:
+    def _find_placeholder_cid(self, response: dict, channel_key: str) -> int:
         """Find the cId of a newly created placeholder server."""
         if not response:
             return 0
@@ -370,7 +370,7 @@ class EdgeADCClient:
         LOG.warning(f"Member {member_ip}:{member_port} not found in VIP {vip_ip}:{vip_port}")
         return False
 
-    def get_members(self, vip_ip: str, vip_port: int) -> List[Dict[str, Any]]:
+    def get_members(self, vip_ip: str, vip_port: int) -> list[dict[str, Any]]:
         """Get all members for a VIP."""
         vip_info = self._get_vip_info(vip_ip, vip_port)
         if not vip_info:

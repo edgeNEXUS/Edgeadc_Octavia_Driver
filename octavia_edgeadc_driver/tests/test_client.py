@@ -1,8 +1,6 @@
 """
 Unit tests for EdgeADC REST client.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 import base64
 
 
@@ -28,7 +26,7 @@ class TestEdgeADCClientInit:
 
     def test_encode_password(self):
         """Test password encoding."""
-        encoded = base64.b64encode("testpass".encode()).decode()
+        encoded = base64.b64encode(b"testpass").decode()
         assert encoded == "dGVzdHBhc3M="
 
 

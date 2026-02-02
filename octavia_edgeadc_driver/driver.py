@@ -7,14 +7,11 @@ OpenStack to use EdgeNexus EdgeADC as a load balancer backend.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
-from oslo_config import cfg
-
-from octavia_lib.api.drivers import data_models
-from octavia_lib.api.drivers import driver_lib
+from octavia_lib.api.drivers import data_models, driver_lib, provider_base
 from octavia_lib.api.drivers import exceptions as driver_exceptions
-from octavia_lib.api.drivers import provider_base
+from oslo_config import cfg
 
 from octavia_edgeadc_driver.api.edgeadc_client import EdgeADCClient
 from octavia_edgeadc_driver.common import config as driver_config
@@ -42,7 +39,7 @@ class EdgeADCProviderDriver(provider_base.ProviderDriver):
     def __init__(self):
         super().__init__()
         self.driver_lib = driver_lib.DriverLibrary()
-        self._clients: Dict[str, EdgeADCClient] = {}
+        self._clients: dict[str, EdgeADCClient] = {}
         LOG.info("EdgeADC provider driver initialized")
 
     def _get_client(self, loadbalancer_id: str = None) -> EdgeADCClient:
@@ -59,7 +56,7 @@ class EdgeADCProviderDriver(provider_base.ProviderDriver):
             )
         return self._clients[host]
 
-    def _update_status(self, status_dict: Dict[str, List[Dict[str, str]]]) -> None:
+    def _update_status(self, status_dict: dict[str, list[dict[str, str]]]) -> None:
         """Update resource status in Octavia."""
         try:
             self.driver_lib.update_loadbalancer_status(status_dict)
@@ -246,7 +243,7 @@ class EdgeADCProviderDriver(provider_base.ProviderDriver):
         except Exception as e:
             raise driver_exceptions.DriverError(user_fault_string="Failed to update member", operator_fault_string=str(e))
 
-    def member_batch_update(self, pool_id: str, members: List[data_models.Member]) -> None:
+    def member_batch_update(self, pool_id: str, members: list[data_models.Member]) -> None:
         """Batch update members."""
         for member in members:
             try:
@@ -291,19 +288,19 @@ class EdgeADCProviderDriver(provider_base.ProviderDriver):
 
     # ========== Flavor/AZ Support ==========
 
-    def get_supported_flavor_metadata(self) -> Dict[str, str]:
+    def get_supported_flavor_metadata(self) -> dict[str, str]:
         return {"edgeadc_device": "EdgeADC device hostname", "ssl_offload": "Enable SSL offload", "compression": "Enable compression"}
 
-    def validate_flavor(self, flavor_metadata: Dict[str, Any]) -> None:
+    def validate_flavor(self, flavor_metadata: dict[str, Any]) -> None:
         supported = self.get_supported_flavor_metadata()
         for key in flavor_metadata:
             if key not in supported:
                 raise driver_exceptions.UnsupportedOptionError(user_fault_string=f"Unsupported flavor option: {key}")
 
-    def get_supported_availability_zone_metadata(self) -> Dict[str, str]:
+    def get_supported_availability_zone_metadata(self) -> dict[str, str]:
         return {"edgeadc_cluster": "EdgeADC cluster for this AZ"}
 
-    def validate_availability_zone(self, availability_zone_metadata: Dict[str, Any]) -> None:
+    def validate_availability_zone(self, availability_zone_metadata: dict[str, Any]) -> None:
         supported = self.get_supported_availability_zone_metadata()
         for key in availability_zone_metadata:
             if key not in supported:

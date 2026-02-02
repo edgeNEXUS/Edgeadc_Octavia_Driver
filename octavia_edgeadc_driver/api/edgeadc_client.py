@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
@@ -57,14 +58,14 @@ class EdgeADCClient:
         url = f"{self.base_url}{constants.API_LOGIN}"
         client = self._get_client()
 
-        # Primary method: Base64 encoded password
+        # Base64 encoded password
         password_b64 = base64.b64encode(self.password.encode()).decode()
-        auth_payload = {self.username: password_b64}
+        auth_payload = f'{{"{self.username}":"{password_b64}"}}'
 
         try:
             r = client.post(
                 url,
-                content=str(auth_payload).replace("'", '"'),
+                content=auth_payload,
                 headers={"Content-Type": "text/plain"}
             )
             data = r.json() if r.content else {}
@@ -78,7 +79,7 @@ class EdgeADCClient:
             client.cookies.set("GUID", guid)
             LOG.info(f"EdgeADC login successful for {self.host}")
         else:
-            LOG.error(f"EdgeADC login failed for {self.host}")
+            LOG.error(f"EdgeADC login failed for {self.host}: {data}")
 
         return guid
 
@@ -126,7 +127,7 @@ class EdgeADCClient:
         if code != 200 or not isinstance(js, dict):
             return []
 
-        # Parse the nested structure
+        # Parse the nested structure: data.dataset.ipService[interface_list][vip]
         result = []
         data = js.get('data', {})
         if isinstance(data, dict):
@@ -164,6 +165,13 @@ class EdgeADCClient:
 
         code, js = self._post(constants.API_VIP_CREATE, payload)
         success = code == 200
+
+        if success:
+            # Apply config to make VIP visible
+            self.apply_config()
+            # Small delay to ensure config is applied
+            time.sleep(0.5)
+
         LOG.info(f"EdgeADC {self.host}: Create VIP {ip_addr}:{port} - {'OK' if success else 'FAILED'}")
         return success, js
 
@@ -172,6 +180,10 @@ class EdgeADCClient:
         payload = {"ipAddr": ip_addr, "port": str(port)}
         code, _ = self._post(constants.API_VIP_DELETE, payload)
         success = code == 200
+
+        if success:
+            self.apply_config()
+
         LOG.info(f"EdgeADC {self.host}: Delete VIP {ip_addr}:{port} - {'OK' if success else 'FAILED'}")
         return success
 
@@ -199,6 +211,7 @@ class EdgeADCClient:
 
         interface_id = vip_info.get("InterfaceID", "0")
         channel_id = vip_info.get("ChannelID", "0")
+        channel_key = vip_info.get("ChannelKey", "")
 
         # Step 1: Create placeholder
         init_payload = {
@@ -210,7 +223,10 @@ class EdgeADCClient:
             return False, {"error": "Failed to create placeholder"}
 
         # Find new placeholder cId
-        new_cid = self._find_placeholder_cid(resp1, vip_info.get("ChannelKey", ""))
+        new_cid = self._find_placeholder_cid(resp1, channel_key)
+        if new_cid == 0:
+            LOG.warning(f"Could not find placeholder cId for VIP {vip_ip}:{vip_port}")
+            return False, {"error": "Could not find placeholder"}
 
         # Step 2: Update placeholder with actual server details
         add_payload = {
@@ -255,8 +271,10 @@ class EdgeADCClient:
                 if vip.get("ChannelKey") == channel_key:
                     content_servers = vip.get("contentServer", {})
                     servers = content_servers.get("CServerId", []) if isinstance(content_servers, dict) else []
+                    if isinstance(servers, dict):
+                        servers = [servers]
                     for server in servers:
-                        if not server.get("CSIPAddr"):  # Empty = placeholder
+                        if isinstance(server, dict) and not server.get("CSIPAddr"):
                             cid = int(server.get("cId", 0))
                             if cid > max_cid:
                                 max_cid = cid
@@ -277,18 +295,23 @@ class EdgeADCClient:
         # Find the server's cId
         content_servers = vip_info.get("contentServer", {})
         servers = content_servers.get("CServerId", []) if isinstance(content_servers, dict) else []
+        if isinstance(servers, dict):
+            servers = [servers]
 
         for server in servers:
-            if server.get("CSIPAddr") == member_ip and str(server.get("CSPort")) == str(member_port):
-                payload = {
-                    "editedInterface": str(vip_info.get("InterfaceID", "0")),
-                    "editedChannel": str(vip_info.get("ChannelID", "0")),
-                    "cId": str(server.get("cId", "0"))
-                }
-                code, _ = self._post(constants.API_SERVER_DELETE, payload)
-                success = code == 200
-                LOG.info(f"EdgeADC {self.host}: Delete member {member_ip}:{member_port} - {'OK' if success else 'FAILED'}")
-                return success
+            if isinstance(server, dict):
+                if server.get("CSIPAddr") == member_ip and str(server.get("CSPort")) == str(member_port):
+                    payload = {
+                        "editedInterface": str(vip_info.get("InterfaceID", "0")),
+                        "editedChannel": str(vip_info.get("ChannelID", "0")),
+                        "cId": str(server.get("cId", "0"))
+                    }
+                    code, _ = self._post(constants.API_SERVER_DELETE, payload)
+                    success = code == 200
+                    if success:
+                        self.apply_config()
+                    LOG.info(f"EdgeADC {self.host}: Delete member {member_ip}:{member_port} - {'OK' if success else 'FAILED'}")
+                    return success
 
         LOG.warning(f"Member {member_ip}:{member_port} not found in VIP {vip_ip}:{vip_port}")
         return False
@@ -301,10 +324,12 @@ class EdgeADCClient:
 
         content_servers = vip_info.get("contentServer", {})
         servers = content_servers.get("CServerId", []) if isinstance(content_servers, dict) else []
+        if isinstance(servers, dict):
+            servers = [servers]
 
         result = []
         for server in servers:
-            if server.get("CSIPAddr"):  # Skip empty placeholders
+            if isinstance(server, dict) and server.get("CSIPAddr"):
                 result.append({
                     "ip_address": server.get("CSIPAddr"),
                     "port": int(server.get("CSPort", 0)),
@@ -334,23 +359,26 @@ class EdgeADCClient:
 
         content_servers = vip_info.get("contentServer", {})
         servers = content_servers.get("CServerId", []) if isinstance(content_servers, dict) else []
+        if isinstance(servers, dict):
+            servers = [servers]
 
         for server in servers:
-            if server.get("CSIPAddr") == member_ip and str(server.get("CSPort")) == str(member_port):
-                payload = {
-                    "editedInterface": str(vip_info.get("InterfaceID", "0")),
-                    "editedChannel": str(vip_info.get("ChannelID", "0")),
-                    "cId": str(server.get("cId", "0")),
-                    "CSActivity": "1",
-                    "CSIPAddr": member_ip,
-                    "CSPort": str(member_port),
-                    "WeightFactor": str(weight),
-                    "CSMonitorEndPoint": "self",
-                }
-                code, _ = self._post(constants.API_SERVER_ADD_UPDATE, payload)
-                if code == 200:
-                    self.apply_config()
-                    return True
-                return False
+            if isinstance(server, dict):
+                if server.get("CSIPAddr") == member_ip and str(server.get("CSPort")) == str(member_port):
+                    payload = {
+                        "editedInterface": str(vip_info.get("InterfaceID", "0")),
+                        "editedChannel": str(vip_info.get("ChannelID", "0")),
+                        "cId": str(server.get("cId", "0")),
+                        "CSActivity": "1",
+                        "CSIPAddr": member_ip,
+                        "CSPort": str(member_port),
+                        "WeightFactor": str(weight),
+                        "CSMonitorEndPoint": "self",
+                    }
+                    code, _ = self._post(constants.API_SERVER_ADD_UPDATE, payload)
+                    if code == 200:
+                        self.apply_config()
+                        return True
+                    return False
 
         return False

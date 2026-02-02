@@ -11,9 +11,10 @@ API_IP_SERVICES = '/GET/9'
 API_SYSTEM_INFO = '/GET/5'
 API_CLUSTER_STATUS = '/GET/30'
 
-# VIP operations
-API_VIP_CREATE = '/POST/9?iAction=1'
-API_VIP_DELETE = '/POST/9?iAction=3'
+# VIP operations (Terraform-style two-step approach)
+API_VIP_CREATE_TEMPLATE = '/POST/9?iAction=3&iType=1&FilterKeyword='
+API_VIP_UPDATE_TEMPLATE = '/POST/9?iAction=2&iType=1&FilterKeyword='
+API_VIP_DELETE = '/POST/9?iAction=3&iType=4&FilterKeyword='
 API_SERVER_ADD_INIT = '/POST/9?iAction=3&iType=3&FilterKeyword='
 API_SERVER_ADD_UPDATE = '/POST/9?iAction=2&iType=2&FilterKeyword='
 API_SERVER_DELETE = '/POST/9?iAction=3&iType=5&FilterKeyword='

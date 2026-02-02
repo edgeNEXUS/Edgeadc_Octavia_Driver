@@ -141,6 +141,14 @@ class EdgeADCClient:
                         result.append(interface_list)
         return result
 
+    def _find_empty_template(self) -> Optional[Dict[str, Any]]:
+        """Find an empty VIP template (ipAddr is empty)."""
+        vips = self.get_ip_services()
+        for vip in vips:
+            if not vip.get("ipAddr"):
+                return vip
+        return None
+
     def create_virtual_service(
         self,
         ip_addr: str,
@@ -149,35 +157,78 @@ class EdgeADCClient:
         subnet_mask: str = "255.255.255.0",
         service_name: str = ""
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
-        """Create a new Virtual IP Service (VIP)."""
+        """Create a new Virtual IP Service (VIP) using Terraform two-step approach.
+        
+        EdgeADC requires a two-step process:
+        1. Create a blank template VIP
+        2. Update the template with actual values
+        """
         # Map Octavia protocol to EdgeADC
         edgeadc_protocol = constants.PROTOCOL_MAP.get(protocol, "TCP")
 
-        payload = {
-            "ipAddr": ip_addr,
-            "port": str(port),
-            "subnetMask": subnet_mask,
-            "serviceType": edgeadc_protocol,
-            "enabled": "1"
+        # Step 1: Create blank template
+        template_payload = {
+            "editedInterface": "",
+            "editedChannel": "",
+            "CopyVIP": "0",
+            "ipAddr": "",
+            "localPortEnabledChecked": "",
+            "port": "",
+            "primaryChecked": "",
+            "serviceName": "",
+            "serviceType": "",
+            "subnetMask": ""
         }
-        if service_name:
-            payload["serviceName"] = service_name
+        code1, _ = self._post(constants.API_VIP_CREATE_TEMPLATE, template_payload)
+        if code1 != 200:
+            LOG.error(f"EdgeADC {self.host}: Failed to create VIP template")
+            return False, {"error": "Failed to create template"}
 
-        code, js = self._post(constants.API_VIP_CREATE, payload)
-        success = code == 200
+        time.sleep(0.3)
+
+        # Step 2: Find the template and update it
+        template = self._find_empty_template()
+        if not template:
+            LOG.error(f"EdgeADC {self.host}: Could not find VIP template")
+            return False, {"error": "Could not find template"}
+
+        interface_id = template.get("InterfaceID", "0")
+        channel_id = template.get("ChannelID", "0")
+
+        update_payload = {
+            "editedInterface": str(interface_id),
+            "editedChannel": str(channel_id),
+            "CopyVIP": "0",
+            "ipAddr": ip_addr,
+            "localPortEnabledChecked": "true",
+            "port": str(port),
+            "primaryChecked": "Active",
+            "serviceName": service_name or f"octavia-{ip_addr}:{port}",
+            "serviceType": edgeadc_protocol,
+            "subnetMask": subnet_mask
+        }
+
+        code2, js = self._post(constants.API_VIP_UPDATE_TEMPLATE, update_payload)
+        success = code2 == 200
 
         if success:
-            # Apply config to make VIP visible
             self.apply_config()
-            # Small delay to ensure config is applied
-            time.sleep(0.5)
+            time.sleep(0.3)
 
         LOG.info(f"EdgeADC {self.host}: Create VIP {ip_addr}:{port} - {'OK' if success else 'FAILED'}")
         return success, js
 
     def delete_virtual_service(self, ip_addr: str, port: int) -> bool:
         """Delete a Virtual IP Service."""
-        payload = {"ipAddr": ip_addr, "port": str(port)}
+        vip_info = self._get_vip_info(ip_addr, port)
+        if not vip_info:
+            LOG.warning(f"VIP {ip_addr}:{port} not found for deletion")
+            return False
+
+        payload = {
+            "editedInterface": str(vip_info.get("InterfaceID", "0")),
+            "editedChannel": str(vip_info.get("ChannelID", "0"))
+        }
         code, _ = self._post(constants.API_VIP_DELETE, payload)
         success = code == 200
 

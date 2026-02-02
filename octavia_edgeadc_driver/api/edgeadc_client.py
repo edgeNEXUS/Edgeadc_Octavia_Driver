@@ -141,12 +141,15 @@ class EdgeADCClient:
                         result.append(interface_list)
         return result
 
-    def _find_empty_template(self) -> Optional[Dict[str, Any]]:
-        """Find an empty VIP template (ipAddr is empty)."""
-        vips = self.get_ip_services()
-        for vip in vips:
-            if not vip.get("ipAddr"):
-                return vip
+    def _find_empty_template(self, max_retries: int = 5) -> Optional[Dict[str, Any]]:
+        """Find an empty VIP template (ipAddr is empty) with retry logic."""
+        for attempt in range(max_retries):
+            vips = self.get_ip_services()
+            for vip in vips:
+                if not vip.get("ipAddr"):
+                    return vip
+            if attempt < max_retries - 1:
+                time.sleep(0.5)  # Wait before retry
         return None
 
     def create_virtual_service(
@@ -184,9 +187,9 @@ class EdgeADCClient:
             LOG.error(f"EdgeADC {self.host}: Failed to create VIP template")
             return False, {"error": "Failed to create template"}
 
-        time.sleep(0.3)
+        time.sleep(0.5)
 
-        # Step 2: Find the template and update it
+        # Step 2: Find the template and update it (with retry)
         template = self._find_empty_template()
         if not template:
             LOG.error(f"EdgeADC {self.host}: Could not find VIP template")

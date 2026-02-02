@@ -1,0 +1,118 @@
+VIP 1.2.3.4:9999 not found for deletion
+VIP 1.2.3.4:9999 not found
+======================================================================
+FULL EDGEADC DRIVER TEST SUITE
+======================================================================
+Target: 192.168.3.159
+Time: 2026-02-02 14:41:33
+
+
+[1] AUTHENTICATION TESTS
+--------------------------------------------------
+  [PASS] 1.1 Login returns GUID
+  [PASS] 1.2 GUID is 32 chars
+  [PASS] 1.3 Re-login works
+
+[2] SYSTEM INFO TESTS
+--------------------------------------------------
+  [PASS] 2.1 Get system info
+  [PASS] 2.2 Response not empty
+
+[3] VIP LISTING TESTS
+--------------------------------------------------
+  [PASS] 3.1 Returns list
+  [PASS] 3.2 Found existing VIPs
+  Existing VIPs:
+    - 192.168.3.161:80 (WAF Ingress)
+    - 192.168.3.161:8888 (WAF Egress)
+    - 192.168.3.161:5001 (edgeagent)
+    - 192.168.3.161:88 (WAF GUI)
+    - 192.168.3.161:8000 (GSLB)
+
+[4] VIP CREATION TESTS (Multiple Protocols)
+--------------------------------------------------
+  [PASS] 4.1 Create HTTP VIP 192.168.3.230:80
+  [PASS] 4.2 Create HTTPS VIP 192.168.3.231:443
+  [PASS] 4.3 Create TCP VIP 192.168.3.232:3306
+  [PASS] 4.4 Create UDP VIP 192.168.3.233:53
+  [PASS] 4.5 Create HTTP VIP 192.168.3.234:8080
+  [PASS] 4.6 Verify test-http-80 exists
+  [PASS] 4.7 Verify test-https-443 exists
+  [PASS] 4.8 Verify test-tcp-mysql exists
+  [PASS] 4.9 Verify test-udp-dns exists
+  [PASS] 4.10 Verify test-http-alt exists
+
+[5] MEMBER OPERATIONS TESTS
+--------------------------------------------------
+  Using VIP: 192.168.3.230:80
+  [PASS] 5.1 Add member 10.0.0.1:8080
+  [PASS] 5.2 Add member 10.0.0.2:8080
+  [PASS] 5.3 Add member 10.0.0.3:8080
+  [PASS] 5.4 Add member 10.0.0.4:8080
+  [PASS] 5.5 Add member 10.0.0.5:8080
+  [PASS] 5.6 Get members returns list
+  [PASS] 5.7 All members present
+  [PASS] 5.8 Member 10.0.0.1 in list
+  [PASS] 5.9 Member 10.0.0.2 in list
+  [PASS] 5.10 Member 10.0.0.3 in list
+  [PASS] 5.11 Member 10.0.0.4 in list
+  [PASS] 5.12 Member 10.0.0.5 in list
+  [PASS] 5.14 Delete member 10.0.0.1
+  [PASS] 5.15 Delete member 10.0.0.2
+  [PASS] 5.16 Delete member 10.0.0.3
+  [PASS] 5.17 Delete member 10.0.0.4
+  [PASS] 5.18 Delete member 10.0.0.5
+  [PASS] 5.19 All members deleted
+
+[6] SAME IP DIFFERENT PORTS TESTS
+--------------------------------------------------
+  [PASS] 6.1 Create 192.168.3.235:80
+  [PASS] 6.2 Create 192.168.3.235:443
+  [PASS] 6.3 Create 192.168.3.235:8080
+  [PASS] 6.4 Create 192.168.3.235:8443
+  [PASS] 6.5 Verify 192.168.3.235:80
+  [PASS] 6.6 Verify 192.168.3.235:443
+  [PASS] 6.7 Verify 192.168.3.235:8080
+  [PASS] 6.8 Verify 192.168.3.235:8443
+
+[7] VIP DELETION TESTS
+--------------------------------------------------
+  [PASS] 7.1 Delete 192.168.3.230:80
+  [PASS] 7.2 Delete 192.168.3.231:443
+  [PASS] 7.3 Delete 192.168.3.232:3306
+  [PASS] 7.4 Delete 192.168.3.233:53
+  [PASS] 7.5 Delete 192.168.3.234:8080
+  [PASS] 7.6 Delete 192.168.3.235:80
+  [PASS] 7.7 Delete 192.168.3.235:443
+  [PASS] 7.8 Delete 192.168.3.235:8080
+  [PASS] 7.9 Delete 192.168.3.235:8443
+  [PASS] 7.10 All test VIPs deleted
+
+[8] ERROR HANDLING TESTS
+--------------------------------------------------
+  [PASS] 8.1 Delete non-existent VIP
+  [PASS] 8.2 Add member to non-existent VIP
+  [PASS] 8.3 Get members non-existent VIP
+  [PASS] 8.4 Delete non-existent member
+
+[9] CONFIG APPLICATION TESTS
+--------------------------------------------------
+  [PASS] 9.1 Apply config
+
+[10] FINAL VERIFICATION
+--------------------------------------------------
+  [PASS] 10.1 VIP count restored
+
+======================================================================
+TEST RESULTS SUMMARY
+======================================================================
+Total Tests:  59
+Passed:       59 (100.0%)
+Failed:       0
+Skipped:      0
+
+======================================================================
+✓ ALL TESTS PASSED!
+
+CONFIDENCE LEVEL: 95.0%
+======================================================================
